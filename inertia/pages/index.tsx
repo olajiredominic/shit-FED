@@ -22,14 +22,21 @@ interface AppProps {
   }
 }
 
-function TicketsList({ tickets }: { tickets: Ticket[] }) {
+function TicketsList({ tickets, onHide }: { tickets: Ticket[]; onHide: (id: string) => void }) {
+
   return (
     <ul className="space-y-4">
       {tickets.map((ticket) => (
         <li
           key={ticket.id}
-          className="bg-white border border-sand-7 rounded-lg p-6 hover:border-sand-8 hover:shadow-sm transition duration-200"
+          className="relative bg-white border border-sand-7 rounded-lg p-6 hover:border-sand-8 hover:shadow-sm transition duration-200 group"
         >
+          <button
+            onClick={() => onHide(ticket.id)}
+            className="absolute top-2 right-2 px-2 py-1 text-sand-12 text-sm rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          >
+            Hide
+          </button>
           <h5 className="text-lg font-semibold text-sand-12 mb-2">{ticket.title}</h5>
           <p className='mb-3'>{ticket.content}</p>
           <footer>
@@ -55,15 +62,26 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
 
 export default function App({ tickets }: AppProps) {
   const [search, setSearch] = useState('')
+  const [hiddenTickets, setHiddenTickets] = useState<string[]>([])
 
   const handleSearch = useCallback(function handleSearch(value: string) {
     setSearch(value)
   }, [])
 
+  const handleHide = useCallback((id: string) => {
+    setHiddenTickets((prev) => [...prev, id])
+  }, [])
+
+  const handleRestore = useCallback(() => {
+    setHiddenTickets([])
+  }, [])
+
   const ticketData =
-    tickets?.data.filter((t) =>
-      (t.title.toLowerCase() + t.content.toLowerCase()).includes(search.toLowerCase())
-    ) || []
+    tickets?.data
+      .filter((t) => !hiddenTickets.includes(t.id))
+      .filter((t) =>
+        (t.title.toLowerCase() + t.content.toLowerCase()).includes(search.toLowerCase())
+      ) || []
 
   return (
     <>
@@ -85,13 +103,29 @@ export default function App({ tickets }: AppProps) {
             </header>
 
             {tickets && (
-              <div className="text-sm text-sand-11 mb-4">
-                Showing {ticketData.length} of {tickets.meta.total} issues
+              <div className="flex items-center space-x-2 text-sm text-sand-11 mb-4">
+                <p>
+                  Showing {ticketData.length} of {tickets.meta.total} issues
+                </p>
+                {hiddenTickets.length > 0 && (
+                  <div className="italic">
+                    (
+                    <span>
+                      {hiddenTickets.length} hidden ticket{hiddenTickets.length > 1 && 's'} -{' '}
+                    </span>
+                    <button
+                      onClick={handleRestore}
+                      className="pl-1 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium italic"
+                    >
+                      restore
+                    </button>
+                    )
+                  </div>
+                )}
               </div>
             )}
-
             {ticketData.length > 0 ? (
-              <TicketsList tickets={ticketData} />
+              <TicketsList tickets={ticketData} onHide={handleHide} />
             ) : (
               <EmptyState hasSearch={Boolean(search)} />
             )}
