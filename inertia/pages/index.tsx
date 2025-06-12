@@ -40,10 +40,23 @@ function TicketsList({ tickets, onHide }: { tickets: Ticket[]; onHide: (id: stri
           <h5 className="text-lg font-semibold text-sand-12 mb-2">{ticket.title}</h5>
           <p className='mb-3'>{ticket.content}</p>
           <footer>
-            <div className="text-sm text-sand-10">
-              By {ticket.userEmail} | {formatDate(ticket.creationTime)}
+            <div className="flex flex-col-reverse md:flex-row justify-between mt-3">
+              <div className="text-sm text-sand-10 mt-2 md:mt-0">
+                By {ticket.userEmail} | {formatDate(ticket.creationTime)}
+              </div>
+              <div>
+                {ticket.labels?.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-block bg-[#daeffd] text-xs font-medium px-2 py-1 rounded-md border border-[#C0E4FD] mr-1"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             </div>
           </footer>
+
         </li>
       ))}
     </ul>
