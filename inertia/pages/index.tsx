@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Head, router, usePage } from '@inertiajs/react'
+import { useState, useCallback, useRef } from 'react'
+import { Head } from '@inertiajs/react'
 import { useTruncationCheck } from '~/hooks/useTruncationCheck'
 import { useIntersectionObserver } from '~/hooks/useInterSectionObserver'
 import { usePaginatedTickets } from '~/hooks/usePaginatedTickets'
@@ -7,6 +7,9 @@ import Ticket from '#models/ticket'
 
 interface AppProps {
   search?: string,
+  after?: string,
+  before?: string,
+  reporter?: string,
   tickets: {
     data: Ticket[]
     meta: {
@@ -101,26 +104,14 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
   )
 }
 
-export default function App({ tickets, search: initialSearch = '' }: AppProps) {
-  const [search, setSearch] = useState(initialSearch)
+export default function App({
+  tickets,
+  search: initialSearch = '',
+  after: initialAfter = '',
+  before: initialBefore = '',
+  reporter: initialReporter = '',
+}: AppProps) {
   const [hiddenTickets, setHiddenTickets] = useState<string[]>([])
-
-  const { url } = usePage()
-  const handleSearch = useCallback(
-    (value: string) => {
-      setSearch(value)
-      // Parse and modify the URL from usePage().url
-      const baseUrl = new URL(url, window.location.origin) // Ensure absolute URL
-      if (value) {
-        baseUrl.searchParams.set('search', value)
-      } else {
-        baseUrl.searchParams.delete('search')
-      }
-      // Trigger Inertia visit with the new URL
-      router.visit(baseUrl.toString(), { preserveState: true })
-    },
-    [url]
-  )
 
   const handleHide = useCallback((id: string) => {
     setHiddenTickets((prev) => [...prev, id])
@@ -134,11 +125,13 @@ export default function App({ tickets, search: initialSearch = '' }: AppProps) {
     allTickets,
     isLoading,
     loadMore,
+    search,
+    handleSearch,
     hasMorePages,
   } = usePaginatedTickets({
     initialTickets: tickets.data,
     meta: tickets.meta,
-    search,
+    initialSearch: `${initialAfter ? `after:${initialAfter} ` : ''}${initialBefore ? `before:${initialBefore} ` : ''}${initialReporter ? `reporter:${initialReporter} ` : ''} ${initialSearch}`.trim()
   });
 
   // Intersection Observer
@@ -148,8 +141,6 @@ export default function App({ tickets, search: initialSearch = '' }: AppProps) {
     rootMargin: '100px',
     threshold: 0.1,
   })
-
-  console.log({ hasMorePages, isLoading });
 
   const ticketData = allTickets.filter((t) => !hiddenTickets.includes(t.id))
 
