@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { Head } from '@inertiajs/react'
+import { useState, useCallback, useRef } from 'react'
+import { Head, router, usePage } from '@inertiajs/react'
 import { useTruncationCheck } from '~/hooks/useTruncationCheck'
 
 export type Ticket = {
@@ -12,6 +12,7 @@ export type Ticket = {
 }
 
 interface AppProps {
+  search?: string,
   tickets: {
     data: Ticket[]
     meta: {
@@ -106,13 +107,27 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
   )
 }
 
-export default function App({ tickets }: AppProps) {
-  const [search, setSearch] = useState('')
+export default function App({ tickets, search: initialSearch = '' }: AppProps) {
+  const [search, setSearch] = useState(initialSearch)
   const [hiddenTickets, setHiddenTickets] = useState<string[]>([])
 
-  const handleSearch = useCallback(function handleSearch(value: string) {
-    setSearch(value)
-  }, [])
+  const { url } = usePage()
+
+  const handleSearch = useCallback(
+    (value: string) => {
+      setSearch(value)
+      // Parse and modify the URL from usePage().url
+      const baseUrl = new URL(url, window.location.origin) // Ensure absolute URL
+      if (value) {
+        baseUrl.searchParams.set('search', value)
+      } else {
+        baseUrl.searchParams.delete('search')
+      }
+      // Trigger Inertia visit with the new URL
+      router.visit(baseUrl.toString(), { preserveState: true })
+    },
+    [url]
+  )
 
   const handleHide = useCallback((id: string) => {
     setHiddenTickets((prev) => [...prev, id])
@@ -125,9 +140,7 @@ export default function App({ tickets }: AppProps) {
   const ticketData =
     tickets?.data
       .filter((t) => !hiddenTickets.includes(t.id))
-      .filter((t) =>
-        (t.title.toLowerCase() + t.content.toLowerCase()).includes(search.toLowerCase())
-      ) || []
+    || []
 
   return (
     <>
