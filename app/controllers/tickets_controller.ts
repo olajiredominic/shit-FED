@@ -4,7 +4,7 @@ import Ticket from '#models/ticket'
 export default class TicketsController {
   async index({ request, inertia }: HttpContext) {
     const page = request.input('page', 1)
-    const pageSize = 20
+    const pageSize = request.input('pageSize', 20)
     const search = request.input('search', '').trim()
 
     let query = Ticket.query()
@@ -17,6 +17,8 @@ export default class TicketsController {
     return inertia.render('index', {
       tickets: tickets.toJSON(),
       search,
+      page,
+      pageSize,
     })
   }
 }

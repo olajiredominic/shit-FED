@@ -1,15 +1,9 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Head, router, usePage } from '@inertiajs/react'
 import { useTruncationCheck } from '~/hooks/useTruncationCheck'
-
-export type Ticket = {
-  id: string
-  title: string
-  content: string
-  creationTime: number
-  userEmail: string
-  labels?: string[]
-}
+import { useIntersectionObserver } from '~/hooks/useInterSectionObserver'
+import { usePaginatedTickets } from '~/hooks/usePaginatedTickets'
+import Ticket from '#models/ticket'
 
 interface AppProps {
   search?: string,
@@ -112,7 +106,6 @@ export default function App({ tickets, search: initialSearch = '' }: AppProps) {
   const [hiddenTickets, setHiddenTickets] = useState<string[]>([])
 
   const { url } = usePage()
-
   const handleSearch = useCallback(
     (value: string) => {
       setSearch(value)
@@ -137,10 +130,28 @@ export default function App({ tickets, search: initialSearch = '' }: AppProps) {
     setHiddenTickets([])
   }, [])
 
-  const ticketData =
-    tickets?.data
-      .filter((t) => !hiddenTickets.includes(t.id))
-    || []
+  const {
+    allTickets,
+    isLoading,
+    loadMore,
+    hasMorePages,
+  } = usePaginatedTickets({
+    initialTickets: tickets.data,
+    meta: tickets.meta,
+    search,
+  });
+
+  // Intersection Observer
+  const { ref: sentinelRef } = useIntersectionObserver({
+    onIntersect: loadMore,
+    enabled: hasMorePages && !isLoading,
+    rootMargin: '100px',
+    threshold: 0.1,
+  })
+
+  console.log({ hasMorePages, isLoading });
+
+  const ticketData = allTickets.filter((t) => !hiddenTickets.includes(t.id))
 
   return (
     <>
@@ -184,7 +195,17 @@ export default function App({ tickets, search: initialSearch = '' }: AppProps) {
               </div>
             )}
             {ticketData.length > 0 ? (
-              <TicketsList tickets={ticketData} onHide={handleHide} />
+              <>
+                <TicketsList tickets={ticketData} onHide={handleHide} />
+                {/* Intersection observer sentinel */}
+                {hasMorePages && <div ref={sentinelRef} className="h-10" />}
+
+                {isLoading && (
+                  <div className="text-center py-4">
+                    <p className="text-sand-11">Loading more issues...</p>
+                  </div>
+                )}
+              </>
             ) : (
               <EmptyState hasSearch={Boolean(search)} />
             )}
