@@ -104,6 +104,24 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
   )
 }
 
+function SearchHelp() {
+  return (
+    <div className="mt-2 text-xs text-sand-10">
+      <p>
+        <strong>Search tips:</strong> Use{' '}
+        <code className="bg-sand-3 px-1 rounded">after:DD/MM/YYYY</code>,{' '}
+        <code className="bg-sand-3 px-1 rounded">before:DD/MM/YYYY</code>, or{' '}
+        <code className="bg-sand-3 px-1 rounded">reporter:email@domain.com</code>
+      </p>
+      <p className="mt-1">
+        <strong>Example:</strong>{' '}
+        <code className="bg-sand-3 px-1 rounded">after:27/09/2019 xss</code> - finds XSS issues
+        created after 27 Sep 2019
+      </p>
+    </div>
+  )
+}
+
 export default function App({
   tickets,
   search: initialSearch = '',
@@ -112,6 +130,7 @@ export default function App({
   reporter: initialReporter = '',
 }: AppProps) {
   const [hiddenTickets, setHiddenTickets] = useState<string[]>([])
+  const [showSearchHelp, setShowSearchHelp] = useState(false)
 
   const handleHide = useCallback((id: string) => {
     setHiddenTickets((prev) => [...prev, id])
@@ -154,13 +173,25 @@ export default function App({
             <h1 className="text-3xl font-bold text-sand-12 mb-8">Security Issues List</h1>
 
             <header className="mb-6">
-              <input
-                type="search"
-                placeholder="Search issues..."
-                className="w-full max-w-md px-4 py-2 border border-sand-7 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                onChange={(e) => handleSearch(e.target.value)}
-                value={search}
-              />
+              <div className="flex">
+                <input
+                  type="search"
+                  placeholder="Search issues..."
+                  className="w-full max-w-2xl px-4 py-2 border border-sand-7 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  onChange={(e) => handleSearch(e.target.value)}
+                  value={search}
+                  onFocus={() => setShowSearchHelp(true)}
+                  onBlur={() => setTimeout(() => setShowSearchHelp(false), 200)}
+                />
+                <button
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sand-10 hover:text-sand-12 text-sm bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center"
+                  onClick={() => setShowSearchHelp(!showSearchHelp)}
+                  type="button"
+                >
+                  ?
+                </button>
+              </div>
+              {showSearchHelp && <SearchHelp />}
             </header>
 
             {tickets && (
