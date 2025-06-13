@@ -21,10 +21,11 @@ interface ParsedSearch {
   after?: string
   before?: string
   reporter?: string
+  labels?: string[]
 }
 
 function parseSearchQuery(query: string): ParsedSearch {
-  const result: ParsedSearch = { text: '' }
+  const result: ParsedSearch = { text: '', labels: [] }
   const parts: string[] = []
 
   // Split by spaces but keep quoted strings together
@@ -41,6 +42,8 @@ function parseSearchQuery(query: string): ParsedSearch {
       result.before = dateStr
     } else if (lowerToken.startsWith('reporter:')) {
       result.reporter = token.substring(9).replace(/"/g, '') // Remove quotes if present
+    } else if (lowerToken.startsWith('labels:')) {
+      result.labels = token.substring(9).replace(/"/g, '').split(',') // Remove quotes if present
     } else {
       parts.push(token)
     }
@@ -81,6 +84,9 @@ export function usePaginatedTickets({ initialTickets, meta, initialSearch }: Use
       }
       if (parsedSearch.reporter) {
         baseUrl.searchParams.set('reporter', parsedSearch.reporter)
+      }
+      if (parsedSearch.labels && parsedSearch.labels.length > 1) {
+        baseUrl.searchParams.set('labels', parsedSearch.labels.join(','))
       }
     }
 
@@ -131,6 +137,12 @@ export function usePaginatedTickets({ initialTickets, meta, initialSearch }: Use
         baseUrl.searchParams.set('reporter', parsedSearch.reporter)
       } else {
         baseUrl.searchParams.delete('reporter')
+      }
+
+      if (parsedSearch.labels && parsedSearch.labels.length > 0) {
+        baseUrl.searchParams.set('labels', parsedSearch.labels.join(','))
+      } else {
+        baseUrl.searchParams.delete('labels')
       }
 
       baseUrl.searchParams.set('page', '1') // Reset to first page on new search

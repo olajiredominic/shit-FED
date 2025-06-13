@@ -11,6 +11,7 @@ export default class TicketsController {
     const after = request.input('after', '')
     const before = request.input('before', '')
     const reporter = request.input('reporter', '')
+    const labels = request.input('labels', '')
 
     let query = Ticket.query()
     if (search) {
@@ -36,6 +37,21 @@ export default class TicketsController {
     // Reporter filtering
     if (reporter) {
       query.whereRaw('LOWER(user_email) LIKE ?', [`%${reporter.toLowerCase()}%`])
+    }
+
+    if (labels) {
+      const labelArray = labels
+        .split(',')
+        .map((label: string) => label.trim().toLowerCase())
+        .filter((label: string) => label)
+      if (labelArray.length > 0) {
+        const labelConditions = labelArray.map(() => 'LOWER(json_each.value) LIKE ?').join(' OR ')
+        const bindings = labelArray.map((label: string) => `%${label}%`)
+        query.whereRaw(
+          `EXISTS (SELECT 1 FROM json_each(tickets.labels) WHERE ${labelConditions})`,
+          bindings
+        )
+      }
     }
 
     const tickets = await query.orderBy('creation_time', 'desc').paginate(page, pageSize)
