@@ -54,10 +54,27 @@ export default class TicketsController {
       }
     }
 
-    const tickets = await query.orderBy('creation_time', 'desc').paginate(page, pageSize)
+    const totalTickets = await query.clone().count('* as total').first()
+    const total = Number(totalTickets?.$extras.total) || 0
+
+    const tickets = await query
+      .orderBy('creation_time', 'desc')
+      .limit(page * pageSize)
+      .exec()
+
+    // Construct response mimicking paginate's toJSON()
+    const ticketsResponse = {
+      data: tickets,
+      meta: {
+        total,
+        perPage: pageSize,
+        currentPage: page,
+        lastPage: Math.ceil(total / pageSize) || 1, // Ensure lastPage is at least 1
+      },
+    }
 
     return inertia.render('index', {
-      tickets: tickets.toJSON(),
+      tickets: ticketsResponse,
       search,
       after,
       before,
