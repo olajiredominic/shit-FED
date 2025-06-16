@@ -18,7 +18,8 @@ interface AppProps {
       currentPage: number
       lastPage: number
     }
-  }
+  },
+  errors?: { after?: string; before?: string; labels?: string }
 }
 
 
@@ -133,6 +134,7 @@ export default function App({
   after: initialAfter = '',
   before: initialBefore = '',
   reporter: initialReporter = '',
+  errors = {},
 }: AppProps) {
   const [hiddenTickets, setHiddenTickets] = useState<string[]>([])
   const [showSearchHelp, setShowSearchHelp] = useState(false)
@@ -168,6 +170,8 @@ export default function App({
 
   const ticketData = allTickets.filter((t) => !hiddenTickets.includes(t.id))
 
+  const errorMessages = Object.values(errors).filter(Boolean).join(' ')
+
   return (
     <>
       <Head title="Security Issues" />
@@ -196,6 +200,9 @@ export default function App({
                   ?
                 </button>
               </div>
+              {errorMessages && (
+                <span className="text-red-500 text-sm mt-2">{errorMessages}</span>
+              )}
               {showSearchHelp && <SearchHelp />}
             </header>
 
