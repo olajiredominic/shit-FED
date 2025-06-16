@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Head } from '@inertiajs/react'
 import { useIntersectionObserver } from '~/hooks/useInterSectionObserver'
 import { usePaginatedTickets } from '~/hooks/usePaginatedTickets'
@@ -6,6 +6,7 @@ import Ticket from '#models/ticket'
 import EmptyState from '~/components/EmptyState'
 import SearchHelp from '~/components/SearchHelp'
 import TicketsList from '~/components/TicketList'
+import useBackToTop from '~/hooks/useBackToTop'
 interface AppProps {
   search?: string,
   after?: string,
@@ -67,6 +68,8 @@ export default function App({
   const ticketData = allTickets.filter((t) => !hiddenTickets.includes(t.id))
 
   const errorMessages = Object.values(errors).filter(Boolean).join(' ')
+
+  const { showBackToTop, scrollToTop } = useBackToTop(400)
 
   return (
     <>
@@ -138,6 +141,15 @@ export default function App({
               </>
             ) : (
               <EmptyState hasSearch={Boolean(search)} />
+            )}
+            {showBackToTop && (
+              <button
+                onClick={scrollToTop}
+                className="fixed bottom-8 right-8 bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:bg-primary-dark transition-colors"
+                aria-label="Back to top"
+              >
+                ↑
+              </button>
             )}
           </main>
         </div>
