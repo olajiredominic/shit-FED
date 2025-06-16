@@ -3,7 +3,11 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "./build",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": [
+      "@adonisjs/core",
+      "@adonisjs/lucid"
+    ]
   },
   "exclude": [
     "./inertia/**/*",

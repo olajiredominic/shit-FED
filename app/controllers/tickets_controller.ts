@@ -7,51 +7,54 @@ export default class TicketsController {
     const page = request.input('page', 1)
     const pageSize = request.input('pageSize', 20)
     const search = request.input('search', '').trim()
-
     const after = request.input('after', '')
     const before = request.input('before', '')
     const reporter = request.input('reporter', '')
     const labels = request.input('labels', '')
 
+    const errors: Record<string, string> = {}
+
     let query = Ticket.query()
+
     if (search) {
-      query = query.whereRaw('LOWER(title) LIKE ?', [`%${search.toLowerCase()}%`])
+      query.whereRaw('LOWER(title) LIKE ?', [`%${search.toLowerCase()}%`])
     }
+
     // Date filtering
-    if (after) {
-      const afterDate = this.parseDate(after)
-      if (afterDate) {
-        // Use end of day to include all tickets from the "after" date
-        query.where('creation_time', '>', afterDate.endOf('day').toUnixInteger() * 1000)
-      }
+    const afterDate = this.parseDate(after)
+    if (after && !afterDate) {
+      errors.after = 'Invalid "after" date format. Use DD/MM/YYYY or YYYY-MM-DD.'
+    } else if (afterDate) {
+      query.where('creation_time', '>', afterDate.endOf('day').toUnixInteger() * 1000)
     }
 
-    if (before) {
-      const beforeDate = this.parseDate(before)
-      if (beforeDate) {
-        // Use end of day to include all tickets up to the "before" date
-        query.where('creation_time', '<', beforeDate.startOf('day').toUnixInteger() * 1000)
-      }
+    const beforeDate = this.parseDate(before)
+    if (before && !beforeDate) {
+      errors.before = 'Invalid "before" date format. Use DD/MM/YYYY or YYYY-MM-DD.'
+    } else if (beforeDate) {
+      query.where('creation_time', '<', beforeDate.startOf('day').toUnixInteger() * 1000)
     }
 
-    // Reporter filtering
-    if (reporter) {
+    if (reporter && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reporter)) {
+      errors.reporter = 'Invalid "reporter" format. Use reporter:email@domain.com.'
+    } else if (reporter) {
       query.whereRaw('LOWER(user_email) LIKE ?', [`%${reporter.toLowerCase()}%`])
     }
 
-    if (labels) {
-      const labelArray = labels
-        .split(',')
-        .map((label: string) => label.trim().toLowerCase())
-        .filter((label: string) => label)
-      if (labelArray.length > 0) {
-        const labelConditions = labelArray.map(() => 'LOWER(json_each.value) LIKE ?').join(' OR ')
-        const bindings = labelArray.map((label: string) => `%${label}%`)
-        query.whereRaw(
-          `EXISTS (SELECT 1 FROM json_each(tickets.labels) WHERE ${labelConditions})`,
-          bindings
-        )
-      }
+    const labelArray = labels
+      .split(',')
+      .map((label: string) => label.trim().toLowerCase())
+      .filter((label: string) => label)
+
+    if (labels && labelArray.length === 0) {
+      errors.labels = 'Invalid "labels" format. Use labels:tag1,tag2'
+    } else if (labelArray.length > 0) {
+      const labelConditions = labelArray.map(() => 'LOWER(json_each.value) LIKE ?').join(' OR ')
+      const bindings = labelArray.map((label: string) => `%${label}%`)
+      query.whereRaw(
+        `EXISTS (SELECT 1 FROM json_each(tickets.labels) WHERE ${labelConditions})`,
+        bindings
+      )
     }
 
     const totalTickets = await query.clone().count('* as total').first()
@@ -62,14 +65,13 @@ export default class TicketsController {
       .limit(page * pageSize)
       .exec()
 
-    // Construct response mimicking paginate's toJSON()
     const ticketsResponse = {
       data: tickets,
       meta: {
         total,
         perPage: pageSize,
         currentPage: page,
-        lastPage: Math.ceil(total / pageSize) || 1, // Ensure lastPage is at least 1
+        lastPage: Math.ceil(total / pageSize) || 1,
       },
     }
 
@@ -81,20 +83,17 @@ export default class TicketsController {
       reporter,
       page,
       pageSize,
+      errors,
     })
   }
 
   private parseDate(dateStr: string): DateTime | null {
-    // Parse YYYY-MM-DD format (e.g., 2025-06-12)
     const date = DateTime.fromFormat(dateStr, 'yyyy-MM-dd', { zone: 'UTC' })
-    if (date.isValid) {
-      return date
-    }
-    // Fallback: try DD/MM/YYYY for backward compatibility or user input
+    if (date.isValid) return date
+
     const fallbackDate = DateTime.fromFormat(dateStr, 'dd/MM/yyyy', { zone: 'UTC' })
-    if (fallbackDate.isValid) {
-      return fallbackDate
-    }
+    if (fallbackDate.isValid) return fallbackDate
+
     return null
   }
 }
