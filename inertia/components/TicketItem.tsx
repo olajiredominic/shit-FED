@@ -2,6 +2,7 @@ import Ticket from "#models/ticket"
 import { useRef, useState } from "react"
 import { useTruncationCheck } from "~/hooks/useTruncationCheck"
 import { formatDate } from "~/utils/date_helper"
+import Label from "./Label"
 
 interface TicketItemProps {
   ticket: Ticket
@@ -50,16 +51,7 @@ function TicketItem({ ticket, onHide }: TicketItemProps) {
           <div className="text-sm text-sand-10 mt-2 md:mt-0">
             By {ticket.userEmail} | {formatDate(ticket.creationTime)}
           </div>
-          <div>
-            {ticket.labels?.map((tag) => (
-              <span
-                key={tag}
-                className="inline-block bg-[#daeffd] text-xs font-medium px-2 py-1 rounded-md border border-[#C0E4FD] mr-1"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          <div>{ticket.labels?.map((tag) => <Label key={tag} label={tag} />)}</div>
         </div>
       </footer>
     </li>
