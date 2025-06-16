@@ -7,6 +7,7 @@ import EmptyState from '~/components/EmptyState'
 import SearchHelp from '~/components/SearchHelp'
 import TicketsList from '~/components/TicketList'
 import useBackToTop from '~/hooks/useBackToTop'
+import Header from '~/components/Header'
 interface AppProps {
   search?: string,
   after?: string,
@@ -80,30 +81,13 @@ export default function App({
           <main>
             <h1 className="text-3xl font-bold text-sand-12 mb-8">Security Issues List</h1>
 
-            <header className="mb-6">
-              <div className="flex">
-                <input
-                  type="search"
-                  placeholder="Search issues..."
-                  className="w-full max-w-2xl px-4 py-2 border border-sand-7 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  onChange={(e) => handleSearch(e.target.value)}
-                  value={search}
-                  onFocus={() => setShowSearchHelp(true)}
-                  onBlur={() => setTimeout(() => setShowSearchHelp(false), 200)}
-                />
-                <button
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-sand-10 hover:text-sand-12 text-sm bg-gray-300 rounded-full w-6 h-6 flex items-center justify-center"
-                  onClick={() => setShowSearchHelp(!showSearchHelp)}
-                  type="button"
-                >
-                  ?
-                </button>
-              </div>
-              {errorMessages && (
-                <span className="text-red-500 text-sm mt-2">{errorMessages}</span>
-              )}
-              {showSearchHelp && <SearchHelp />}
-            </header>
+            <Header
+              search={search}
+              handleSearch={handleSearch}
+              errorMessages={errorMessages}
+              showSearchHelp={showSearchHelp}
+              setShowSearchHelp={setShowSearchHelp}
+            />
 
             {tickets && (
               <div className="flex items-center space-x-2 text-sm text-sand-11 mb-4">
